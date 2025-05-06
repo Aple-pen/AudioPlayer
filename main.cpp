@@ -9,16 +9,21 @@
 #include "imgui.h"
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
+#include "Import.h"
+#include "implot.h"
 
 #define WIDTH 1920
 #define HEIGHT 1080
 
 GLFWwindow *window;
 
+
+Import import;
+
 bool CreateGLWindow()
 {
     // 윈도우 생성
-    window = glfwCreateWindow(WIDTH, HEIGHT, "Dear ImGui + OpenGL 4.1", nullptr, nullptr);
+    window = glfwCreateWindow(WIDTH, HEIGHT, "AudioPlayer", nullptr, nullptr);
 
     if (!window)
     {
@@ -75,11 +80,68 @@ bool InitImGui()
     }
     // ImPlot::CreateContext();
     ImGui::CreateContext();
+    ImPlot::CreateContext();
     // SetFont();
 
     // Dear ImGui 초기화
     IMGUI_CHECKVERSION();
     return true;
+}
+static int TimeFormatter(double value, char* buff, int size, void* user_data) {
+    int total_ms = static_cast<int>(value * 1000.0);  // 전체 밀리초
+    int hours = total_ms / (3600 * 1000);
+    int minutes = (total_ms / (60 * 1000)) % 60;
+    int seconds = (total_ms / 1000) % 60;
+    int millis = total_ms % 1000;
+
+    snprintf(buff, size, "%02d:%02d.%03d", minutes, seconds, millis);
+    return 0;
+}
+
+
+void Render(){
+    ImGui_ImplOpenGL3_NewFrame();
+    ImGui_ImplGlfw_NewFrame();
+    ImGui::NewFrame();
+
+    ImGui::Begin("Waveform Viewer");
+
+    if (ImPlot::BeginPlot("Stereo Overlay", "Time", "Amplitude", ImVec2(-1, 400))) {
+        ImPlot::SetupAxisFormat(ImAxis_X1, TimeFormatter);
+        ImPlot::SetupAxisLimits(ImAxis_Y1, -1.5, 3.5, ImGuiCond_Always); // Y축 고정
+        ImPlot::SetupAxisZoomConstraints(ImAxis_Y1, 5.0, 5.0); // 줌 제한 (Y축 고정)
+        ImPlot::SetupAxis(ImAxis_Y1, nullptr, ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks);
+        // 오른쪽 채널을 아래로
+        ImPlot::PlotLine("Right", import.time.data(), import.right_wave.data(), import.right_wave.size());
+
+        std::vector<float> shifted_left(import.left_wave.size());
+        for (size_t i = 0; i < import.left_wave.size(); ++i)
+            shifted_left[i] = import.left_wave[i] + 2.0f;
+
+        ImPlot::PlotLine("Left", import.time.data(), shifted_left.data(), shifted_left.size());
+
+
+        ImPlot::EndPlot();
+    }
+
+    ImGui::End();
+    // ImGui 렌더링
+    ImGui::Render();
+    int display_w, display_h;
+    glfwGetFramebufferSize(window, &display_w, &display_h);
+    glViewport(0, 0, display_w, display_h);
+    glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
+    glClear(GL_COLOR_BUFFER_BIT);
+    ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
+
+//    ImPlot::PlotLine("L", import.left_wave.data(), import.left_wave.size());
+    glfwSwapBuffers(window);
+
+}
+void refresh_callback(GLFWwindow *window) {
+    Render();
+
+
 }
 
 int main()
@@ -87,24 +149,17 @@ int main()
     if (!InitImGui() || !CreateGLWindow())
         return -1;
 
+    glfwSetWindowRefreshCallback(window, refresh_callback);
+
+
+    if(import.GetMp3()){
+        import.GetInfo();
+    }
+
     while (!glfwWindowShouldClose(window))
     {
         glfwPollEvents();
-
-        ImGui_ImplOpenGL3_NewFrame();
-        ImGui_ImplGlfw_NewFrame();
-        ImGui::NewFrame();
-
-        // ImGui 렌더링
-        ImGui::Render();
-        int display_w, display_h;
-        glfwGetFramebufferSize(window, &display_w, &display_h);
-        glViewport(0, 0, display_w, display_h);
-        glClearColor(0.1f, 0.1f, 0.1f, 1.0f);
-        glClear(GL_COLOR_BUFFER_BIT);
-        ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
-
-        glfwSwapBuffers(window);
+        Render();
     }
 
     ImGui_ImplOpenGL3_Shutdown();

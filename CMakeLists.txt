@@ -1,5 +1,5 @@
 ﻿cmake_minimum_required(VERSION 3.14)
-project(ImGuiProject)
+project(AudioPlayer)
 
 set(CMAKE_CXX_STANDARD 17)
 # 플랫폼별 설정
@@ -117,14 +117,20 @@ target_include_directories(imgui PUBLIC
 
 target_link_libraries(imgui PUBLIC glfw glad ${OpenGL_LIBRARY})
 
-# 🔹 실행 파일 생성
-add_executable(ImGuiProject main.cpp)
-target_link_libraries(ImGuiProject PRIVATE imgui glfw glad ${OpenGL_LIBRARY})
 
-target_link_libraries(ImGuiProject PRIVATE spdlog::spdlog)
+# 🔹 실행 파일 생성
+add_executable(AudioPlayer MACOSX_BUNDLE main.cpp
+        ${implot_SOURCE_DIR}/implot.cpp
+        ${implot_SOURCE_DIR}/implot_items.cpp # 이 파일 누락 시 링크 오류 발생
+        Utils/Import.cpp Utils/Import.h Utils/Import.h)
+
+target_include_directories(AudioPlayer PRIVATE third_party/minimp3)
+target_link_libraries(AudioPlayer PRIVATE imgui glfw glad ${OpenGL_LIBRARY})
+
+target_link_libraries(AudioPlayer PRIVATE spdlog::spdlog)
         
 # # fonts 폴더를 빌드 디렉토리로 복사
-# add_custom_command(TARGET ImGuiProject POST_BUILD
+# add_custom_command(TARGET AudioPlayer POST_BUILD
 #         COMMAND ${CMAKE_COMMAND} -E copy_directory
-#         ${CMAKE_SOURCE_DIR}/fonts $<TARGET_FILE_DIR:ImGuiProject>/fonts
+#         ${CMAKE_SOURCE_DIR}/fonts $<TARGET_FILE_DIR:AudioPlayer>/fonts
 #         )

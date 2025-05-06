@@ -35,7 +35,7 @@ bool Import::GetMp3(const std::string filePath) {
 
     if(dec.info.channels == 2){
         for (int i = 0; i < total_read; i += step * 2) {
-            left_wave.push_back(static_cast<float>(pcm_buffer[i])     / 32768.0f);     // L
+            left_wave.push_back(static_cast<float>((pcm_buffer[i])     / 32768.0f) + 2.0f);     // L
             right_wave.push_back(static_cast<float>(pcm_buffer[i + 1]) / 32768.0f);    // R
         }
     }

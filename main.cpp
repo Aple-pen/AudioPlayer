@@ -114,11 +114,7 @@ void Render(){
         // 오른쪽 채널을 아래로
         ImPlot::PlotLine("Right", import.time.data(), import.right_wave.data(), import.right_wave.size());
 
-        std::vector<float> shifted_left(import.left_wave.size());
-        for (size_t i = 0; i < import.left_wave.size(); ++i)
-            shifted_left[i] = import.left_wave[i] + 2.0f;
-
-        ImPlot::PlotLine("Left", import.time.data(), shifted_left.data(), shifted_left.size());
+        ImPlot::PlotLine("Left", import.time.data(), import.left_wave.data(), import.left_wave.size());
 
 
         ImPlot::EndPlot();

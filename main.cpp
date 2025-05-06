@@ -20,6 +20,17 @@ GLFWwindow *window;
 
 Import import;
 
+double elapsedSeconds = 1.0;
+std::chrono::steady_clock::time_point playbackStart;
+bool isPlaying = false;
+
+float x = elapsedSeconds;
+float y_min = -1.5f;  // 또는 현재 y축 하한
+float y_max = 3.5f;   // 또는 현재 y축 상한
+
+float x_vals[2] = {x, x};
+float y_vals[2] = {y_min, y_max};
+
 bool CreateGLWindow()
 {
     // 윈도우 생성
@@ -106,21 +117,26 @@ void Render(){
 
     ImGui::Begin("Waveform Viewer");
 
-    if (ImPlot::BeginPlot("Stereo Overlay", "Time", "Amplitude", ImVec2(-1, 400))) {
+    if (ImPlot::BeginPlot("Stereo Overlay", "Time", "Amplitude", ImVec2(-1, 400),ImPlotFlags_NoLegend)) {
         ImPlot::SetupAxisFormat(ImAxis_X1, TimeFormatter);
         ImPlot::SetupAxisLimits(ImAxis_Y1, -1.5, 3.5, ImGuiCond_Always); // Y축 고정
         ImPlot::SetupAxisZoomConstraints(ImAxis_Y1, 5.0, 5.0); // 줌 제한 (Y축 고정)
         ImPlot::SetupAxis(ImAxis_Y1, nullptr, ImPlotAxisFlags_NoTickLabels | ImPlotAxisFlags_NoGridLines | ImPlotAxisFlags_NoTickMarks);
         // 오른쪽 채널을 아래로
         ImPlot::PlotLine("Right", import.time.data(), import.right_wave.data(), import.right_wave.size());
-
         ImPlot::PlotLine("Left", import.time.data(), import.left_wave.data(), import.left_wave.size());
 
+        ImPlot::PlotLine("Playhead", x_vals, y_vals, 2);
 
         ImPlot::EndPlot();
     }
 
     ImGui::End();
+
+    if (ImGui::Button("▶ Play")) {
+        playbackStart = std::chrono::steady_clock::now();
+        isPlaying = true;
+    }
     // ImGui 렌더링
     ImGui::Render();
     int display_w, display_h;
